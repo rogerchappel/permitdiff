@@ -1,0 +1,24 @@
+{
+  "allow": {
+    "commands": [
+      "npm *",
+      "git status",
+      "gh repo view"
+    ],
+    "paths": [
+      "/workspace/project"
+    ],
+    "domains": [
+      "*.github.com"
+    ],
+    "tools": [
+      "read",
+      "write"
+    ]
+  },
+  "deny": {
+    "domains": [
+      "metadata.google.internal"
+    ]
+  }
+}

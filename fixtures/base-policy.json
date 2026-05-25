@@ -1,0 +1,25 @@
+{
+  "allow": {
+    "commands": [
+      "npm test",
+      "git status"
+    ],
+    "paths": [
+      "/workspace/project/src"
+    ],
+    "domains": [
+      "api.github.com"
+    ],
+    "tools": [
+      "read"
+    ]
+  },
+  "deny": {
+    "commands": [
+      "rm -rf *"
+    ],
+    "domains": [
+      "metadata.google.internal"
+    ]
+  }
+}

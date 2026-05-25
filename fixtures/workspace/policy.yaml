@@ -1,0 +1,8 @@
+allow:
+  paths:
+    - /workspace/project/src
+  tools:
+    - read
+deny:
+  domains:
+    - metadata.google.internal
