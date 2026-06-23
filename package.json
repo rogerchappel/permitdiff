@@ -16,6 +16,9 @@
   },
   "files": [
     "dist",
+    "!dist/**/*.test.*",
+    "fixtures",
+    "examples",
     "README.md",
     "LICENSE",
     "SECURITY.md",
@@ -26,8 +29,8 @@
     "build": "tsc",
     "check": "tsc --noEmit",
     "test": "npm run build && node --test \"dist/**/*.test.js\"",
-    "smoke": "npm run build && node dist/cli.js compare fixtures/base-policy.json fixtures/current-policy.json --format markdown",
-    "package:smoke": "npm pack --dry-run",
+    "smoke": "npm run build && node dist/cli.js compare fixtures/base-policy.json fixtures/current-policy.json --format markdown && node dist/cli.js scan fixtures/workspace --out /tmp/permitdiff-policy-smoke.json",
+    "package:smoke": "bash scripts/package-smoke.sh",
     "release:check": "npm run check && npm test && npm run smoke && npm run package:smoke",
     "release:readiness": "node scripts/validate-release-readiness.mjs"
   },

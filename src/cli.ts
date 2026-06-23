@@ -1,6 +1,8 @@
 #!/usr/bin/env node
+import { realpathSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { diffPolicies } from './core/diff.js';
 import { parsePolicyFile } from './core/parse.js';
 import { scanWorkspace, writePolicyJson } from './core/scan.js';
@@ -78,8 +80,8 @@ function printHelp(): void {
   process.stdout.write(`permitdiff\n\nUsage:\n  permitdiff compare <base> <current> --format json|markdown\n  permitdiff scan <workspace> --out policy.json\n`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const invokedPath = process.argv[1];
+if (invokedPath && realpathSync(fileURLToPath(import.meta.url)) === realpathSync(invokedPath)) {
   const exitCode = await main();
   process.exit(exitCode);
 }
-

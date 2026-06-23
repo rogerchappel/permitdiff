@@ -30,6 +30,8 @@ Scan a workspace for supported policy files and write a normalized policy:
 npx permitdiff scan fixtures/workspace --out policy.json
 ```
 
+See [examples/permission-escalation.md](examples/permission-escalation.md) for a small escalation-review workflow using the bundled fixtures.
+
 Supported policy inputs:
 
 - JSON manifests with `allow` / `deny` sections or `entries` arrays
@@ -65,15 +67,6 @@ should be small, reviewable, and verified before review.
 ## Security
 
 See [SECURITY.md](SECURITY.md) for vulnerability reporting guidance.
-
-## Verification
-
-Use the package scripts as the public smoke gates before publishing or changing CLI behavior.
-
-- `npm run release:check`
-- `npm run test`
-- `npm run smoke`
-- `npm run check`
 
 ## License
 
