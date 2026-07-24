@@ -1,0 +1,6 @@
+allow:
+  commands: ["npm test", "git   status"]
+  paths:
+    - "docs/#draft.md"
+deny:
+  domains: [metadata.google.internal]
