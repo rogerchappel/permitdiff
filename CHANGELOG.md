@@ -8,6 +8,8 @@ format and uses semantic versioning when versioned releases are published.
 ## [Unreleased]
 
 - Added release-readiness validation for package metadata, CI placeholder cleanup, and package smoke coverage.
+- Fixed YAML policy parsing to preserve block and flow sequence values and reject unsupported shapes.
+
 ### Added
 
 - Initial project setup.

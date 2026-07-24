@@ -38,6 +38,22 @@ Supported policy inputs:
 - YAML manifests with `allow` / `deny` sections
 - Markdown headings such as `## Allow Commands` and bullet lists
 
+YAML kind buckets accept block sequences and flow sequences. Values must be
+strings, and supported kinds are commands, paths, domains, and tools (singular
+or plural):
+
+```yaml
+allow:
+  commands: ["npm test", "git status"]
+  paths:
+    - "docs/#draft.md"
+deny:
+  domains: [metadata.google.internal]
+```
+
+Malformed YAML, unknown sections or kinds, scalar buckets, and non-string
+sequence values are rejected with an error that identifies the policy source.
+
 ## Verify
 
 Run the local validation script before opening a pull request:
