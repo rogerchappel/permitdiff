@@ -37,6 +37,33 @@ test('parses json, markdown, and yaml policies into normalized entries', () => {
   assert.equal(yaml.entries[0]?.value, '/workspace/project/src');
 });
 
+test('parses YAML block and flow sequences without losing values', async () => {
+  const content = await readFile(path.join(repoRoot, 'fixtures/sequence-policy.yaml'), 'utf8');
+  const policy = parseYamlPolicy(content, 'fixtures/sequence-policy.yaml');
+
+  assert.deepEqual(policy.entries, [
+    { kind: 'command', effect: 'allow', value: 'npm test', source: 'fixtures/sequence-policy.yaml' },
+    { kind: 'command', effect: 'allow', value: 'git status', source: 'fixtures/sequence-policy.yaml' },
+    { kind: 'path', effect: 'allow', value: 'docs/#draft.md', source: 'fixtures/sequence-policy.yaml' },
+    { kind: 'domain', effect: 'deny', value: 'metadata.google.internal', source: 'fixtures/sequence-policy.yaml' }
+  ]);
+});
+
+test('rejects malformed and unsupported YAML policies with source context', () => {
+  assert.throws(
+    () => parseYamlPolicy('allow: [unterminated', 'broken.yaml'),
+    /Invalid YAML policy in broken\.yaml:/
+  );
+  assert.throws(
+    () => parseYamlPolicy('allow:\n  commands: npm test\n', 'scalar.yaml'),
+    /Unsupported YAML policy in scalar\.yaml: "allow\.commands" must be a block or flow sequence/
+  );
+  assert.throws(
+    () => parseYamlPolicy('allow:\n  capabilities: [deploy]\n', 'unknown.yaml'),
+    /Unsupported YAML policy in unknown\.yaml: unsupported permission kind "capabilities"/
+  );
+});
+
 test('classifies broadened allows and removed denies as high risk', async () => {
   const base = await parseJsonPolicyFile(path.join(repoRoot, 'fixtures/base-policy.json'));
   const current = await parseJsonPolicyFile(path.join(repoRoot, 'fixtures/current-policy.json'));

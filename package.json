@@ -58,5 +58,8 @@
   "bugs": {
     "url": "https://github.com/rogerchappel/permitdiff/issues"
   },
-  "homepage": "https://github.com/rogerchappel/permitdiff#readme"
+  "homepage": "https://github.com/rogerchappel/permitdiff#readme",
+  "dependencies": {
+    "yaml": "^2.9.0"
+  }
 }
