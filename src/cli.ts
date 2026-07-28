@@ -31,13 +31,12 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
 }
 
 async function runCompare(args: string[]): Promise<void> {
-  const positional = args.filter((arg) => !arg.startsWith('--'));
-  const basePath = positional[0];
-  const currentPath = positional[1];
-  if (!basePath || !currentPath) {
-    throw new Error('compare requires <base> and <current> policy files.');
+  const { positional, options } = parseArgs('compare', args, ['--format']);
+  if (positional.length !== 2) {
+    throw new Error('compare accepts exactly <base> and <current> policy files.');
   }
-  const format = readFormat(args);
+  const [basePath, currentPath] = positional as [string, string];
+  const format = readFormat(options.get('--format'));
   const base = await parsePolicyFile(basePath);
   const current = await parsePolicyFile(currentPath);
   const result = diffPolicies(base, current);
@@ -45,11 +44,12 @@ async function runCompare(args: string[]): Promise<void> {
 }
 
 async function runScan(args: string[]): Promise<void> {
-  const root = args.find((arg) => !arg.startsWith('--'));
-  if (!root) {
-    throw new Error('scan requires <workspace> path.');
+  const { positional, options } = parseArgs('scan', args, ['--out']);
+  if (positional.length !== 1) {
+    throw new Error('scan accepts exactly one <workspace> path.');
   }
-  const out = readOption(args, '--out');
+  const [root] = positional as [string];
+  const out = options.get('--out');
   const policy = await scanWorkspace(root);
   const body = `${JSON.stringify({ entries: policy.entries }, null, 2)}\n`;
   if (out) {
@@ -60,20 +60,39 @@ async function runScan(args: string[]): Promise<void> {
   }
 }
 
-function readFormat(args: string[]): Format {
-  const value = readOption(args, '--format') ?? 'json';
+function readFormat(value: string | undefined): Format {
+  value ??= 'json';
   if (value !== 'json' && value !== 'markdown') {
     throw new Error(`Unsupported format: ${value}`);
   }
   return value;
 }
 
-function readOption(args: string[], name: string): string | undefined {
-  const index = args.indexOf(name);
-  if (index === -1) {
-    return undefined;
+function parseArgs(command: string, args: string[], allowedOptions: string[]) {
+  const positional: string[] = [];
+  const options = new Map<string, string>();
+
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index]!;
+    if (!argument.startsWith('--')) {
+      positional.push(argument);
+      continue;
+    }
+    if (!allowedOptions.includes(argument)) {
+      throw new Error(`Unknown option for ${command}: ${argument}`);
+    }
+    if (options.has(argument)) {
+      throw new Error(`Option may only be specified once: ${argument}`);
+    }
+    const value = args[index + 1];
+    if (!value || value.startsWith('--')) {
+      throw new Error(`${argument} requires a value.`);
+    }
+    options.set(argument, value);
+    index += 1;
   }
-  return args[index + 1];
+
+  return { positional, options };
 }
 
 function printHelp(): void {
