@@ -30,6 +30,9 @@ Scan a workspace for supported policy files and write a normalized policy:
 npx permitdiff scan fixtures/workspace --out policy.json
 ```
 
+Command options may appear before or after positional paths. Each command
+rejects unknown options, missing option values, and extra positional paths.
+
 See [examples/permission-escalation.md](examples/permission-escalation.md) for a small escalation-review workflow using the bundled fixtures.
 
 Supported policy inputs:
