@@ -20,7 +20,7 @@ test('compare accepts options before and after its policy paths', () => {
   assert.equal(trailing.status, 0, trailing.stderr);
   assert.equal(leading.status, 0, leading.stderr);
   assert.equal(leading.stdout, trailing.stdout);
-  assert.match(leading.stdout, /^# Permission Diff/m);
+  assert.match(leading.stdout, /^# PermitDiff Report/m);
 });
 
 test('scan accepts --out before and after its workspace path', () => {
