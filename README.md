@@ -57,6 +57,24 @@ deny:
 Malformed YAML, unknown sections or kinds, scalar buckets, and non-string
 sequence values are rejected with an error that identifies the policy source.
 
+JSON kind buckets likewise must be arrays of strings. The `entries` form uses
+objects with a supported `kind`, an optional `effect` (`allow` by default), and
+a string `value`:
+
+```json
+{
+  "entries": [
+    { "kind": "command", "value": "npm test" },
+    { "kind": "domain", "effect": "deny", "value": "metadata.google.internal" }
+  ]
+}
+```
+
+Malformed JSON, unsupported top-level shapes or keys, invalid sections, and
+malformed entry-array members are rejected with an error that identifies the
+policy source. This prevents invalid input from being treated as an empty
+policy during a comparison.
+
 ## Verify
 
 Run the local validation script before opening a pull request:
