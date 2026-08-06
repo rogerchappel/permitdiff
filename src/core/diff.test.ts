@@ -64,6 +64,52 @@ test('rejects malformed and unsupported YAML policies with source context', () =
   );
 });
 
+test('rejects malformed and unsupported JSON policies with source context', () => {
+  const unsupported = [
+    ['null', 'expected a top-level object or entry array'],
+    ['"allow"', 'expected a top-level object or entry array'],
+    ['42', 'expected a top-level object or entry array'],
+    ['{"allows":{"commands":["npm test"]}}', 'unsupported top-level key "allows"'],
+    ['{"allow":[]}', '"allow" must be a mapping of permission kinds to arrays'],
+    ['{"allow":{"capabilities":["deploy"]}}', 'unsupported permission kind "capabilities" in "allow"'],
+    ['{"allow":{"commands":"npm test"}}', '"allow.commands" must be an array'],
+    ['{"deny":{"domains":[false]}}', '"deny.domains" must contain only strings'],
+    ['{"entries":["npm test"]}', 'entry at index 0 must be an object'],
+    ['{"entries":[{"kind":"command","effect":"permit","value":"npm test"}]}', 'entry at index 0 unsupported effect "permit"'],
+    ['{"entries":[{"kind":"capability","value":"deploy"}]}', 'entry at index 0 unsupported kind "capability"'],
+    ['{"entries":[{"kind":"command","value":7}]}', 'entry at index 0 must have a string value']
+  ] as const;
+
+  for (const [content, detail] of unsupported) {
+    assert.throws(
+      () => parseJsonPolicy(content, 'policy.json'),
+      (error: unknown) => error instanceof Error
+        && error.message === `Unsupported JSON policy in policy.json: ${detail}`
+    );
+  }
+
+  assert.throws(
+    () => parseJsonPolicy('{"allow":', 'broken.json'),
+    /Invalid JSON policy in broken\.json:/
+  );
+});
+
+test('accepts documented JSON section and entry-array forms', () => {
+  const sections = parseJsonPolicy('{"allow":{"commands":["npm test"]},"deny":{"domains":["example.com"]}}');
+  const entries = parseJsonPolicy('{"entries":[{"kind":"tool","effect":"deny","value":"write"},{"kind":"path","value":"/tmp/"}]}');
+  const topLevelEntries = parseJsonPolicy('[{"kind":"domain","value":"API.GitHub.com"}]');
+
+  assert.deepEqual(sections.entries.map(({ kind, effect, value }) => ({ kind, effect, value })), [
+    { kind: 'command', effect: 'allow', value: 'npm test' },
+    { kind: 'domain', effect: 'deny', value: 'example.com' }
+  ]);
+  assert.deepEqual(entries.entries.map(({ kind, effect, value }) => ({ kind, effect, value })), [
+    { kind: 'tool', effect: 'deny', value: 'write' },
+    { kind: 'path', effect: 'allow', value: '/tmp' }
+  ]);
+  assert.equal(topLevelEntries.entries[0]?.value, 'api.github.com');
+});
+
 test('classifies broadened allows and removed denies as high risk', async () => {
   const base = await parseJsonPolicyFile(path.join(repoRoot, 'fixtures/base-policy.json'));
   const current = await parseJsonPolicyFile(path.join(repoRoot, 'fixtures/current-policy.json'));
