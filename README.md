@@ -75,6 +75,10 @@ malformed entry-array members are rejected with an error that identifies the
 policy source. This prevents invalid input from being treated as an empty
 policy during a comparison.
 
+Command entries ending in ` *` widen only commands at the same token boundary:
+for example, `npm *` contains `npm test`, while `git *` does not contain
+`github` or `git-lfs`.
+
 ## Verify
 
 Run the local validation script before opening a pull request:
