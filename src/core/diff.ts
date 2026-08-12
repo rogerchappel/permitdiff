@@ -134,7 +134,11 @@ function isWider(kind: PermissionKind, candidate: string, baseline: string): boo
     return candidate.startsWith('*.') && baseline.endsWith(candidate.slice(1));
   }
   if (kind === 'command') {
-    return candidate.endsWith(' *') && baseline.startsWith(candidate.slice(0, -2));
+    if (!candidate.endsWith(' *')) {
+      return false;
+    }
+    const command = candidate.slice(0, -2);
+    return baseline === command || baseline.startsWith(`${command} `);
   }
   return false;
 }

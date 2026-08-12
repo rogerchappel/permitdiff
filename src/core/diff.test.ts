@@ -130,6 +130,56 @@ test('classifies broadened allows and removed denies as high risk', async () => 
   }));
 });
 
+test('does not treat command prefix collisions as wildcard widening', () => {
+  for (const baseline of ['github', 'git-lfs']) {
+    const result = diffPolicies(
+      { source: 'base.json', entries: [{ kind: 'command', effect: 'allow', value: baseline, source: 'base.json' }] },
+      { source: 'current.json', entries: [{ kind: 'command', effect: 'allow', value: 'git *', source: 'current.json' }] }
+    );
+
+    assert.deepEqual(result.summary, { added: 1, removed: 1, unchanged: 0, highRisk: 1 });
+    assert.deepEqual(result.changes, [
+      {
+        type: 'added',
+        kind: 'command',
+        effect: 'allow',
+        value: 'git *',
+        classification: 'new',
+        risk: 'high',
+        reason: 'A new command allow entry was added.'
+      },
+      {
+        type: 'removed',
+        kind: 'command',
+        effect: 'allow',
+        value: baseline,
+        classification: 'narrowed',
+        risk: 'low',
+        reason: 'A command allow entry was removed.'
+      }
+    ]);
+  }
+});
+
+test('classifies a command wildcard containing a subcommand as widened', () => {
+  const result = diffPolicies(
+    { source: 'base.json', entries: [{ kind: 'command', effect: 'allow', value: 'npm test', source: 'base.json' }] },
+    { source: 'current.json', entries: [{ kind: 'command', effect: 'allow', value: 'npm *', source: 'current.json' }] }
+  );
+
+  assert.deepEqual(result.summary, { added: 1, removed: 0, unchanged: 0, highRisk: 1 });
+  assert.deepEqual(result.changes, [{
+    type: 'added',
+    kind: 'command',
+    effect: 'allow',
+    value: 'npm *',
+    classification: 'widened',
+    risk: 'high',
+    reason: 'Allowed command scope is wider than npm test.',
+    related: 'npm test'
+  }]);
+});
+
 test('scans a workspace and writes a deduped policy json file', async () => {
   const policy = await scanWorkspace(path.join(repoRoot, 'fixtures/workspace'));
   const outDir = await mkdtemp(path.join(tmpdir(), 'permitdiff-'));
