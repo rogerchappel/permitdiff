@@ -41,6 +41,13 @@ Supported policy inputs:
 - YAML manifests with `allow` / `deny` sections
 - Markdown headings such as `## Allow Commands` and bullet lists
 
+Markdown bullet values may use backticks to delimit the complete value. A
+whitespace-prefixed `#` inside those backticks is part of the value; outside
+the closing backtick it starts a trailing comment. For example,
+`` `echo start # keep this` # explanation `` parses as
+`echo start # keep this`. Unquoted values may also use a whitespace-prefixed
+`#` for a trailing comment.
+
 YAML kind buckets accept block sequences and flow sequences. Values must be
 strings, and supported kinds are commands, paths, domains, and tools (singular
 or plural):

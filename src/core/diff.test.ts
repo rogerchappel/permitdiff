@@ -37,6 +37,33 @@ test('parses json, markdown, and yaml policies into normalized entries', () => {
   assert.equal(yaml.entries[0]?.value, '/workspace/project/src');
 });
 
+test('preserves hash text inside backtick-delimited Markdown values', () => {
+  const policy = parseMarkdownPolicy([
+    '## Allow Commands',
+    '',
+    '- `echo start # keep this`',
+    '- `printf "#%s" value` # formatting command',
+    '- echo plain # explanatory comment'
+  ].join('\n'));
+
+  assert.deepEqual(policy.entries.map((entry) => entry.value), [
+    'echo start # keep this',
+    'printf "#%s" value',
+    'echo plain'
+  ]);
+});
+
+test('diffs hash-bearing Markdown commands without narrowing their values', () => {
+  const baseline = parseMarkdownPolicy('## Allow Commands\n\n- `echo start # keep this`\n', 'base.md');
+  const current = parseMarkdownPolicy('## Allow Commands\n\n- `echo start # keep that`\n', 'current.md');
+  const result = diffPolicies(baseline, current);
+
+  assert.deepEqual(result.changes.map(({ type, value }) => ({ type, value })), [
+    { type: 'added', value: 'echo start # keep that' },
+    { type: 'removed', value: 'echo start # keep this' }
+  ]);
+});
+
 test('parses YAML block and flow sequences without losing values', async () => {
   const content = await readFile(path.join(repoRoot, 'fixtures/sequence-policy.yaml'), 'utf8');
   const policy = parseYamlPolicy(content, 'fixtures/sequence-policy.yaml');
