@@ -42,5 +42,12 @@ export function parseMarkdownPolicy(content: string, source = '<markdown>'): Pol
 }
 
 function cleanupMarkdownValue(value: string): string {
-  return value.replace(/\s+#.*$/g, '').replace(/^`|`$/g, '').trim();
+  const trimmed = value.trim();
+  const codeSpan = /^(`+)([\s\S]*?)\1(?:\s+#.*)?$/.exec(trimmed);
+
+  if (codeSpan) {
+    return codeSpan[2]?.trim() ?? '';
+  }
+
+  return trimmed.replace(/\s+#.*$/, '').trim();
 }
