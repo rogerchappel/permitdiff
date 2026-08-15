@@ -18,17 +18,21 @@ npm run build
 
 ## Use
 
-Compare two policy files:
+From a local checkout, run the built CLI directly:
 
 ```sh
-npx permitdiff compare fixtures/base-policy.json fixtures/current-policy.json --format markdown
+node dist/cli.js compare fixtures/base-policy.json fixtures/current-policy.json --format markdown
 ```
 
 Scan a workspace for supported policy files and write a normalized policy:
 
 ```sh
-npx permitdiff scan fixtures/workspace --out policy.json
+node dist/cli.js scan fixtures/workspace --out policy.json
 ```
+
+After a release is published to npm, the equivalent commands can be run without
+a checkout using `npx permitdiff@latest compare ...` and
+`npx permitdiff@latest scan ...`.
 
 Command options may appear before or after positional paths. Each command
 rejects unknown options, missing option values, and extra positional paths.
@@ -102,10 +106,15 @@ Run the same checks that CI uses before opening a release PR:
 
 ```sh
 npm run release:readiness
+npm run release:contract
 npm run release:check
 ```
 
-`release:readiness` validates repository metadata, the package files allowlist, package smoke coverage, and CI placeholder cleanup. `release:check` runs the project build, test, smoke, and package dry-run checks where configured.
+`release:readiness` validates repository metadata, the package files allowlist,
+package smoke coverage, CI placeholder cleanup, and the tagged-release contract.
+`release:contract` exercises that contract against invalid configurations.
+`release:check` runs the project build, test, smoke, and package dry-run checks
+where configured.
 
 ## Contributing
 
