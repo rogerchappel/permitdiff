@@ -25,6 +25,8 @@ jobs:
           node-version: 22
           cache: npm
           registry-url: https://registry.npmjs.org
+      - name: Install npm with trusted publishing support
+        run: npm install --global npm@11.5.1
       - name: Install dependencies
         run: npm ci
       - name: Install ReleaseBox
@@ -35,13 +37,29 @@ jobs:
           npm --prefix /tmp/releasebox run build
       - name: ReleaseBox readiness check
         run: node /tmp/releasebox/bin/releasebox.js check .
+      - name: Validate tag and package identity
+        run: |
+          set -euo pipefail
+          package_name="$(node --input-type=module -e "import pkg from './package.json' with { type: 'json' }; process.stdout.write(pkg.name)")"
+          package_version="$(node --input-type=module -e "import pkg from './package.json' with { type: 'json' }; process.stdout.write(pkg.version)")"
+          test "$package_name" = "permitdiff"
+          test "$GITHUB_REF_NAME" = "v$package_version"
       - name: Run release checks
         run: npm run release:check
       - name: Build package
-        run: npm pack
+        id: package
+        run: |
+          set -euo pipefail
+          mkdir -p release-artifacts
+          pack_json="$(npm pack --json --pack-destination release-artifacts)"
+          tarball="$(node --input-type=module -e "const result = JSON.parse(process.argv[1]); if (result.length !== 1 || !result[0].filename) process.exit(1); process.stdout.write(result[0].filename)" "$pack_json")"
+          test -f "release-artifacts/$tarball"
+          echo "tarball=release-artifacts/$tarball" >> "$GITHUB_OUTPUT"
+      - name: Publish package to npm
+        run: npm publish "${{ steps.package.outputs.tarball }}" --provenance --access public
       - name: Generate release notes
         run: node /tmp/releasebox/bin/releasebox.js notes . > RELEASE_NOTES.md
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" --notes-file RELEASE_NOTES.md *.tgz
+        run: gh release create "${GITHUB_REF_NAME}" --notes-file RELEASE_NOTES.md "${{ steps.package.outputs.tarball }}"
