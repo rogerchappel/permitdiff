@@ -207,6 +207,65 @@ test('classifies a command wildcard containing a subcommand as widened', () => {
   }]);
 });
 
+test('treats wider deny replacements as strengthened boundaries', () => {
+  const replacements = [
+    ['path', '/workspace/project', '/workspace'],
+    ['domain', 'api.example.com', '*.example.com'],
+    ['command', 'npm test', 'npm *'],
+    ['tool', 'write', '*']
+  ] as const;
+
+  for (const [kind, baseline, current] of replacements) {
+    const result = diffPolicies(
+      { source: 'base.json', entries: [{ kind, effect: 'deny', value: baseline, source: 'base.json' }] },
+      { source: 'current.json', entries: [{ kind, effect: 'deny', value: current, source: 'current.json' }] }
+    );
+
+    assert.deepEqual(result.summary, { added: 1, removed: 0, unchanged: 0, highRisk: 0 });
+    assert.deepEqual(result.changes, [{
+      type: 'added',
+      kind,
+      effect: 'deny',
+      value: current,
+      classification: 'narrowed',
+      risk: 'low',
+      reason: `Denied ${kind} scope is wider than ${baseline}, strengthening the safety boundary.`,
+      related: baseline
+    }]);
+  }
+});
+
+test('collapses multiple narrower denies into one strengthened boundary', () => {
+  const result = diffPolicies(
+    { source: 'base.json', entries: [
+      { kind: 'path', effect: 'deny', value: '/workspace/one', source: 'base.json' },
+      { kind: 'path', effect: 'deny', value: '/workspace/two', source: 'base.json' }
+    ] },
+    { source: 'current.json', entries: [
+      { kind: 'path', effect: 'deny', value: '/workspace', source: 'current.json' }
+    ] }
+  );
+
+  assert.deepEqual(result.summary, { added: 1, removed: 0, unchanged: 0, highRisk: 0 });
+  assert.equal(result.changes[0]?.classification, 'narrowed');
+});
+
+test('preserves genuinely removed or weakened deny boundaries as high risk', () => {
+  const removed = diffPolicies(
+    { source: 'base.json', entries: [{ kind: 'path', effect: 'deny', value: '/workspace', source: 'base.json' }] },
+    { source: 'current.json', entries: [] }
+  );
+  const weakened = diffPolicies(
+    { source: 'base.json', entries: [{ kind: 'path', effect: 'deny', value: '/workspace', source: 'base.json' }] },
+    { source: 'current.json', entries: [{ kind: 'path', effect: 'deny', value: '/workspace/project', source: 'current.json' }] }
+  );
+
+  assert.equal(removed.summary.highRisk, 1);
+  assert.equal(removed.changes[0]?.classification, 'boundary-removed');
+  assert.deepEqual(weakened.summary, { added: 1, removed: 1, unchanged: 0, highRisk: 1 });
+  assert.ok(weakened.changes.some((change) => change.classification === 'boundary-removed'));
+});
+
 test('scans a workspace and writes a deduped policy json file', async () => {
   const policy = await scanWorkspace(path.join(repoRoot, 'fixtures/workspace'));
   const outDir = await mkdtemp(path.join(tmpdir(), 'permitdiff-'));

@@ -12,10 +12,13 @@ export function diffPolicies(base: Policy, current: Policy): DiffResult {
       changes.push(toChange('unchanged', entry, 'exact', 'Permission is unchanged.'));
       continue;
     }
-    const related = findRelated(entry, base.entries);
+    const relatedEntries = findRelatedEntries(entry, base.entries);
+    const related = relatedEntries[0];
     const classification = classifyAddition(entry, related);
-    if (classification === 'widened' && related) {
-      replacedBaseKeys.add(entryKey(related));
+    if ((classification === 'widened' || classification === 'narrowed') && related) {
+      for (const replaced of relatedEntries.filter((candidate) => isWider(entry.kind, entry.value, candidate.value))) {
+        replacedBaseKeys.add(entryKey(replaced));
+      }
     }
     changes.push(toChange('added', entry, classification, explainAddition(entry, classification, related), related?.value));
   }
@@ -24,7 +27,7 @@ export function diffPolicies(base: Policy, current: Policy): DiffResult {
     if (currentMap.has(key) || replacedBaseKeys.has(key)) {
       continue;
     }
-    const related = findRelated(entry, current.entries);
+    const related = findRelatedEntries(entry, current.entries)[0];
     const classification = entry.effect === 'deny' ? 'boundary-removed' : classifyRemoval(entry, related);
     changes.push(toChange('removed', entry, classification, explainRemoval(entry, classification, related), related?.value));
   }
@@ -43,8 +46,8 @@ function mapEntries(entries: PermissionEntry[]): Map<string, PermissionEntry> {
   return new Map(entries.map((entry) => [entryKey(entry), entry]));
 }
 
-function findRelated(entry: PermissionEntry, candidates: PermissionEntry[]): PermissionEntry | undefined {
-  return candidates.find((candidate) => {
+function findRelatedEntries(entry: PermissionEntry, candidates: PermissionEntry[]): PermissionEntry[] {
+  return candidates.filter((candidate) => {
     return candidate.kind === entry.kind
       && candidate.effect === entry.effect
       && (isWider(entry.kind, entry.value, candidate.value) || isWider(entry.kind, candidate.value, entry.value));
@@ -53,7 +56,7 @@ function findRelated(entry: PermissionEntry, candidates: PermissionEntry[]): Per
 
 function classifyAddition(entry: PermissionEntry, related: PermissionEntry | undefined): ScopeClassification {
   if (entry.effect === 'deny') {
-    return 'new';
+    return related && isWider(entry.kind, entry.value, related.value) ? 'narrowed' : 'new';
   }
   if (related && isWider(entry.kind, entry.value, related.value)) {
     return 'widened';
@@ -105,6 +108,9 @@ function explainAddition(entry: PermissionEntry, classification: ScopeClassifica
     return `Allowed ${entry.kind} scope is wider than ${related.value}.`;
   }
   if (entry.effect === 'deny') {
+    if (classification === 'narrowed' && related) {
+      return `Denied ${entry.kind} scope is wider than ${related.value}, strengthening the safety boundary.`;
+    }
     return 'A new safety boundary was added.';
   }
   return `A new ${entry.kind} allow entry was added.`;
