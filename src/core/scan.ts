@@ -4,6 +4,7 @@ import { parsePolicyFile } from './parse.js';
 import type { PermissionEntry, Policy } from './types.js';
 
 const SUPPORTED_EXTENSIONS = new Set(['.json', '.md', '.markdown', '.yaml', '.yml']);
+const POLICY_NAME_SEGMENT = /(?:^|[-_.])(policy|permissions?)(?:[-_.]|$)/i;
 
 export async function scanWorkspace(root: string): Promise<Policy> {
   const files = await collectPolicyFiles(root);
@@ -19,6 +20,8 @@ export async function writePolicyJson(policy: Policy, outPath: string): Promise<
 async function collectPolicyFiles(root: string): Promise<string[]> {
   const stats = await stat(root);
   if (stats.isFile()) {
+    // Explicit inputs retain strict validation, even when their filename would
+    // not be selected during workspace discovery.
     return SUPPORTED_EXTENSIONS.has(path.extname(root).toLowerCase()) ? [root] : [];
   }
 
@@ -31,11 +34,21 @@ async function collectPolicyFiles(root: string): Promise<string[]> {
     const fullPath = path.join(root, entry.name);
     if (entry.isDirectory()) {
       files.push(...await collectPolicyFiles(fullPath));
-    } else if (SUPPORTED_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) {
+    } else if (isPolicyCandidate(entry.name)) {
       files.push(fullPath);
     }
   }
   return files.sort();
+}
+
+function isPolicyCandidate(fileName: string): boolean {
+  const extension = path.extname(fileName).toLowerCase();
+  if (!SUPPORTED_EXTENSIONS.has(extension)) {
+    return false;
+  }
+
+  const stem = fileName.slice(0, -extension.length);
+  return fileName.toLowerCase() === 'agents.md' || POLICY_NAME_SEGMENT.test(stem);
 }
 
 function dedupeEntries(entries: PermissionEntry[]): PermissionEntry[] {
@@ -49,4 +62,3 @@ function dedupeEntries(entries: PermissionEntry[]): PermissionEntry[] {
     return true;
   });
 }
-

@@ -30,6 +30,13 @@ Scan a workspace for supported policy files and write a normalized policy:
 node dist/cli.js scan fixtures/workspace --out policy.json
 ```
 
+Workspace discovery considers supported extensions only when the filename is
+`AGENTS.md` or has a `policy`, `permission`, or `permissions` segment separated
+by dots, dashes, or underscores (for example, `policy.yaml` and
+`service-permissions.json`). Other manifests such as `package.json` are
+ignored. An explicitly supplied file is always parsed and strictly validated,
+regardless of its filename.
+
 After a release is published to npm, the equivalent commands can be run without
 a checkout using `npx permitdiff@latest compare ...` and
 `npx permitdiff@latest scan ...`.

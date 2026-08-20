@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -280,5 +280,37 @@ test('scans a workspace and writes a deduped policy json file', async () => {
     assert.ok(policy.entries.some((entry) => entry.kind === 'domain' && entry.effect === 'deny'));
   } finally {
     await rm(outDir, { recursive: true, force: true });
+  }
+});
+
+test('workspace discovery ignores unrelated manifests beside policy files', async () => {
+  const workspace = await mkdtemp(path.join(tmpdir(), 'permitdiff-mixed-'));
+
+  try {
+    await writeFile(path.join(workspace, 'package.json'), '{"name":"ordinary-app","private":true}\n');
+    await writeFile(path.join(workspace, 'permission-policy.yaml'), 'allow:\n  commands: ["npm test"]\n');
+
+    const policy = await scanWorkspace(workspace);
+
+    assert.deepEqual(policy.entries.map(({ kind, effect, value }) => ({ kind, effect, value })), [
+      { kind: 'command', effect: 'allow', value: 'npm test' }
+    ]);
+  } finally {
+    await rm(workspace, { recursive: true, force: true });
+  }
+});
+
+test('explicit malformed policy files retain strict validation', async () => {
+  const workspace = await mkdtemp(path.join(tmpdir(), 'permitdiff-explicit-'));
+  const malformed = path.join(workspace, 'package.json');
+
+  try {
+    await writeFile(malformed, '{"name":"ordinary-app","private":true}\n');
+    await assert.rejects(
+      scanWorkspace(malformed),
+      /Unsupported JSON policy .*package\.json: unsupported top-level key "name"/
+    );
+  } finally {
+    await rm(workspace, { recursive: true, force: true });
   }
 });
