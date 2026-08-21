@@ -63,14 +63,5 @@ jobs:
             npm install
           fi
 
-      - name: Validate package scripts
-        run: npm run check
-
-      - name: Run tests
-        run: npm test
-
-      - name: Run CLI smoke
-        run: npm run smoke
-
-      - name: Verify package contents
-        run: npm run package:smoke
+      - name: Run release checks
+        run: npm run release:check
