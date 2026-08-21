@@ -12,6 +12,8 @@ requireField(packageJson.repository, 'package.json must declare repository metad
 requireField(Array.isArray(packageJson.files) && packageJson.files.length > 0, 'package.json must declare a non-empty files allowlist');
 requireField(scripts['package:smoke'], 'package.json scripts must include package:smoke');
 requireField(scripts['release:check'], 'package.json scripts must include release:check');
+requireField(/npm run release:readiness/.test(scripts['release:check'] ?? ''), 'release:check must run npm run release:readiness');
+requireField(/npm run release:contract/.test(scripts['release:check'] ?? ''), 'release:check must run npm run release:contract');
 requireField(releaseboxConfig.release?.publishNpm === true, 'releasebox.config.json must enable npm publication');
 
 const workflowDir = path.join(root, '.github', 'workflows');
