@@ -112,16 +112,14 @@ bash scripts/validate.sh
 Run the same checks that CI uses before opening a release PR:
 
 ```sh
-npm run release:readiness
-npm run release:contract
 npm run release:check
 ```
 
 `release:readiness` validates repository metadata, the package files allowlist,
 package smoke coverage, CI placeholder cleanup, and the tagged-release contract.
 `release:contract` exercises that contract against invalid configurations.
-`release:check` runs the project build, test, smoke, and package dry-run checks
-where configured.
+`release:check` is the unified CI gate: it runs the project type, build, test,
+smoke, package dry-run, release-readiness, and release-contract checks.
 
 ## Contributing
 

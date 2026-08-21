@@ -43,6 +43,25 @@ test('rejects disabled npm publication', (t) => {
   assert.match(result.stderr, /must enable npm publication/);
 });
 
+for (const requiredScript of ['release:readiness', 'release:contract']) {
+  test(`rejects a release gate that omits ${requiredScript}`, (t) => {
+    const directory = fixture((fixtureRoot) => {
+      const packagePath = path.join(fixtureRoot, 'package.json');
+      const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+      packageJson.scripts['release:check'] = packageJson.scripts['release:check']
+        .split(' && ')
+        .filter((command) => command !== `npm run ${requiredScript}`)
+        .join(' && ');
+      fs.writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`);
+    });
+    t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+
+    const result = validate(directory);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, new RegExp(`must run npm run ${requiredScript}`));
+  });
+}
+
 test('rejects publication ordered before identity validation', (t) => {
   const directory = fixture((fixtureRoot) => {
     const workflowPath = path.join(fixtureRoot, '.github', 'workflows', 'release.yml');

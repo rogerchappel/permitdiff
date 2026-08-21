@@ -32,7 +32,7 @@
     "test": "npm run build && node --test \"dist/**/*.test.js\"",
     "smoke": "npm run build && node dist/cli.js compare fixtures/base-policy.json fixtures/current-policy.json --format markdown && node dist/cli.js scan fixtures/workspace --out /tmp/permitdiff-policy-smoke.json",
     "package:smoke": "bash scripts/package-smoke.sh",
-    "release:check": "npm run check && npm test && npm run smoke && npm run package:smoke",
+    "release:check": "npm run check && npm test && npm run smoke && npm run package:smoke && npm run release:readiness && npm run release:contract",
     "release:readiness": "node scripts/validate-release-readiness.mjs",
     "release:contract": "node --test scripts/validate-release-contract.test.mjs"
   },
