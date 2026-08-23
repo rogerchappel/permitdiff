@@ -44,6 +44,37 @@ if (fs.existsSync(workflowDir)) {
     requireField(releaseWorkflow.includes('"${{ steps.package.outputs.tarball }}"'), 'release workflow must use the explicit tarball output');
     requireField(!/^\s*run:\s+gh release create.*\*\.tgz/m.test(releaseWorkflow), 'GitHub release must not use a tarball wildcard');
   }
+
+  const dryRunWorkflowPath = path.join(workflowDir, 'release-dry-run.yml');
+  requireField(fs.existsSync(dryRunWorkflowPath), 'repository must include .github/workflows/release-dry-run.yml');
+  if (fs.existsSync(dryRunWorkflowPath)) {
+    const dryRunWorkflow = fs.readFileSync(dryRunWorkflowPath, 'utf8');
+    const pullRequestPaths = dryRunWorkflow.match(/pull_request:\s*\n\s+paths:\s*\n((?:\s+- .+\n)+)/)?.[1] ?? '';
+    const requiredDryRunPaths = [
+      'src/**',
+      'tsconfig.json',
+      'scripts/**',
+      'fixtures/**',
+      'examples/**',
+      'docs/README.md',
+      'README.md',
+      'LICENSE',
+      'SECURITY.md',
+      'CHANGELOG.md',
+      'CONTRIBUTING.md',
+      'releasebox.config.json',
+      'package.json',
+      'package-lock.json',
+      '.github/workflows/release*.yml',
+    ];
+    for (const requiredPath of requiredDryRunPaths) {
+      const escapedPath = requiredPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      requireField(
+        new RegExp(`^\\s+- ${escapedPath}\\s*$`, 'm').test(pullRequestPaths),
+        `release dry-run pull_request paths must include ${requiredPath}`,
+      );
+    }
+  }
 }
 
 if (failures.length > 0) {
