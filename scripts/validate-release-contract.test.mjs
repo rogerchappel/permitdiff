@@ -13,6 +13,7 @@ function fixture(mutator) {
   fs.cpSync(path.join(root, 'releasebox.config.json'), path.join(directory, 'releasebox.config.json'));
   fs.mkdirSync(path.join(directory, '.github', 'workflows'), { recursive: true });
   fs.cpSync(path.join(root, '.github', 'workflows', 'release.yml'), path.join(directory, '.github', 'workflows', 'release.yml'));
+  fs.cpSync(path.join(root, '.github', 'workflows', 'release-dry-run.yml'), path.join(directory, '.github', 'workflows', 'release-dry-run.yml'));
   mutator(directory);
   return directory;
 }
@@ -27,6 +28,19 @@ function validate(directory) {
 test('accepts the repository release contract', () => {
   const result = validate(root);
   assert.equal(result.status, 0, result.stderr);
+});
+
+test('rejects release dry-run filters that omit a required input class', (t) => {
+  const directory = fixture((fixtureRoot) => {
+    const workflowPath = path.join(fixtureRoot, '.github', 'workflows', 'release-dry-run.yml');
+    const workflow = fs.readFileSync(workflowPath, 'utf8');
+    fs.writeFileSync(workflowPath, workflow.replace('      - src/**\n', ''));
+  });
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+
+  const result = validate(directory);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /release dry-run pull_request paths must include src\/\*\*/);
 });
 
 test('rejects disabled npm publication', (t) => {
