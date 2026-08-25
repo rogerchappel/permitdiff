@@ -314,3 +314,43 @@ test('explicit malformed policy files retain strict validation', async () => {
     await rm(workspace, { recursive: true, force: true });
   }
 });
+
+test('explicit unsupported policy files report the source path', async () => {
+  const workspace = await mkdtemp(path.join(tmpdir(), 'permitdiff-explicit-'));
+  const unsupported = path.join(workspace, 'policy.txt');
+
+  try {
+    await writeFile(unsupported, 'not a supported policy\n');
+    await assert.rejects(scanWorkspace(unsupported), {
+      message: `Unsupported policy file type: ${unsupported}`
+    });
+  } finally {
+    await rm(workspace, { recursive: true, force: true });
+  }
+});
+
+test('explicit supported policy files do not require a policy filename stem', async () => {
+  const workspace = await mkdtemp(path.join(tmpdir(), 'permitdiff-explicit-'));
+  const supported = path.join(workspace, 'custom-name.json');
+
+  try {
+    await writeFile(supported, '{"allow":{"tools":["Read"]}}\n');
+    const policy = await scanWorkspace(supported);
+    assert.deepEqual(policy.entries.map((entry) => entry.value), ['read']);
+  } finally {
+    await rm(workspace, { recursive: true, force: true });
+  }
+});
+
+test('workspace discovery continues to ignore unsupported extensions', async () => {
+  const workspace = await mkdtemp(path.join(tmpdir(), 'permitdiff-mixed-'));
+
+  try {
+    await writeFile(path.join(workspace, 'permission-policy.yaml'), 'allow:\n  tools: [Read]\n');
+    await writeFile(path.join(workspace, 'policy.txt'), 'not a supported policy\n');
+    const policy = await scanWorkspace(workspace);
+    assert.deepEqual(policy.entries.map((entry) => entry.value), ['read']);
+  } finally {
+    await rm(workspace, { recursive: true, force: true });
+  }
+});
