@@ -22,7 +22,7 @@ async function collectPolicyFiles(root: string): Promise<string[]> {
   if (stats.isFile()) {
     // Explicit inputs retain strict validation, even when their filename would
     // not be selected during workspace discovery.
-    return SUPPORTED_EXTENSIONS.has(path.extname(root).toLowerCase()) ? [root] : [];
+    return [root];
   }
 
   const files: string[] = [];
