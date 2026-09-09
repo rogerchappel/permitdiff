@@ -18,6 +18,11 @@ Agent workspaces accumulate permission files in JSON, YAML, and Markdown. Review
 - Emit JSON and human-readable Markdown.
 - Ship fixture-backed tests with risky and benign examples.
 
+Markdown permission lists use headings that combine an allow or deny effect
+with a supported permission kind. Unrelated headings terminate that context;
+their bullets are prose, not policy entries. Permission-section bullets may
+state an explicit effect and kind when they need to override the heading.
+
 ## Non-Goals
 
 - Enforcing permissions at runtime.

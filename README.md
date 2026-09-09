@@ -52,6 +52,13 @@ Supported policy inputs:
 - YAML manifests with `allow` / `deny` sections
 - Markdown headings such as `## Allow Commands` and bullet lists
 
+Markdown permission sections require an allow or deny effect and a supported
+kind in the heading, such as `## Allow Commands` or `## Deny Paths`. A new
+heading that is not a permission section ends the previous section, so bullets
+under `## Notes` or `## Examples` are not inherited into the policy. Within a
+permission section, a bullet may override the section with an explicit effect
+and kind, for example `- [deny] path: /workspace/private`.
+
 Markdown bullet values may use backticks to delimit the complete value. A
 whitespace-prefixed `#` inside those backticks is part of the value; outside
 the closing backtick it starts a trailing comment. For example,
