@@ -18,7 +18,7 @@ export function parseMarkdownPolicy(content: string, source = '<markdown>'): Pol
   for (const rawLine of content.split(/\r?\n/)) {
     const heading = headingPattern.exec(rawLine);
     if (heading) {
-      currentEffect = heading[1] ? normalizeEffect(heading[1]) : currentEffect;
+      currentEffect = heading[1] ? normalizeEffect(heading[1]) : undefined;
       const headingKind = heading[2];
       currentKind = headingKind ? normalizeKind(headingKind.replace(/\s+list$/i, '')) : undefined;
       continue;
