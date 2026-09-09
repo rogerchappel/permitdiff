@@ -37,6 +37,37 @@ test('parses json, markdown, and yaml policies into normalized entries', () => {
   assert.equal(yaml.entries[0]?.value, '/workspace/project/src');
 });
 
+test('clears markdown permission context at unrelated headings', () => {
+  const markdown = parseMarkdownPolicy([
+    '# Allow Commands',
+    '- npm test',
+    '## Notes',
+    '- command: rm -rf *',
+    '## Deny Paths',
+    '- /workspace/secrets',
+    '## Examples',
+    '- path: /workspace/example'
+  ].join('\n'));
+
+  assert.deepEqual(markdown.entries, [
+    { kind: 'command', effect: 'allow', value: 'npm test', source: '<markdown>' },
+    { kind: 'path', effect: 'deny', value: '/workspace/secrets', source: '<markdown>' }
+  ]);
+});
+
+test('keeps explicit effect and kind bullets in permission sections', () => {
+  const markdown = parseMarkdownPolicy([
+    '# Allow Commands',
+    '- [deny] path: /workspace/private',
+    '- tool: Read'
+  ].join('\n'));
+
+  assert.deepEqual(markdown.entries, [
+    { kind: 'path', effect: 'deny', value: '/workspace/private', source: '<markdown>' },
+    { kind: 'tool', effect: 'allow', value: 'read', source: '<markdown>' }
+  ]);
+});
+
 test('preserves hash text inside backtick-delimited Markdown values', () => {
   const policy = parseMarkdownPolicy([
     '## Allow Commands',
