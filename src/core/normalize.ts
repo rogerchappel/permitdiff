@@ -69,10 +69,13 @@ function normalizePath(value: string): string {
 }
 
 function normalizeDomain(value: string): string {
-  return value
+  const domain = value
     .replace(/^https?:\/\//i, '')
     .replace(/\/.*$/g, '')
-    .replace(/:\d+$/g, '')
     .toLowerCase();
+
+  // A bracketed IPv6 literal contains colons; only strip a suffix port after
+  // the closing bracket so address segments are never mistaken for a port.
+  return domain.replace(/^(\[[\da-f:.]+\]):\d+$/i, '$1').replace(/(?<!\]):\d+$/g, '');
 }
 
