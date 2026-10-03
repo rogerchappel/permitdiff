@@ -5,12 +5,20 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { diffPolicies } from './diff.js';
+import { normalizeValue } from './normalize.js';
 import { parseJsonPolicy, parseJsonPolicyFile } from './json.js';
 import { parseMarkdownPolicy } from './markdown.js';
 import { scanWorkspace, writePolicyJson } from './scan.js';
 import { parseYamlPolicy } from './yaml.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+
+test('normalizes bracketed IPv6 domains without ports', () => {
+  assert.equal(normalizeValue('domain', '[2001:db8::1]:8080'), '[2001:db8::1]');
+  assert.equal(normalizeValue('domain', '[2001:db8::1]'), '[2001:db8::1]');
+  assert.equal(normalizeValue('domain', 'example.com:8080'), 'example.com');
+  assert.equal(normalizeValue('domain', '192.0.2.1:443'), '192.0.2.1');
+});
 
 test('parses json, markdown, and yaml policies into normalized entries', () => {
   const json = parseJsonPolicy(JSON.stringify({
